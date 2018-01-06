@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+mvn -DskipTests clean package
+
+java -jar target/fuzz-*.jar $@
