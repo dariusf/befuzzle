@@ -145,7 +145,11 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
   }
 
   private fun stringGen(min: Int, max: Int): Gen<String> {
-    return strings().basicLatinAlphabet().ofLengthBetween(min, max)
+    return oneOf(
+        constant("null"),
+        constant("nil"),
+        strings().allPossible().ofLengthBetween(min, max),
+        strings().basicLatinAlphabet().ofLengthBetween(min, max))
   }
 
   fun modelGen(model: Model): Gen<JsonNode> {
@@ -330,6 +334,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
 
             when (qp.type) {
               "string" ->
+                // TODO header parameters must be ascii
                 propertyGen(qp.name, StringProperty())
               "integer"
               -> if (qp.format == "int64") {

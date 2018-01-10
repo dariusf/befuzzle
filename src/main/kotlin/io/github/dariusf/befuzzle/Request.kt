@@ -7,6 +7,7 @@ import com.mashape.unirest.request.HttpRequest
 import com.mashape.unirest.request.HttpRequestWithBody
 import io.swagger.models.HttpMethod
 import org.apache.commons.lang3.NotImplementedException
+import org.apache.commons.lang3.StringEscapeUtils
 
 /**
  * A fully-generated HTTP request.
@@ -44,50 +45,50 @@ class Request(private val url: String,
       return request1
     }
     val request =
-    when (method) {
-      HttpMethod.GET -> {
-        // TODO change the header to application/x-www-form-urlencoded
-        val req = Unirest.get(url)
-            .header("Content-Type", "application/json")
-        if (body != null) {
-          throw RuntimeException("error in specification; GET requests cannot have a body")
+        when (method) {
+          HttpMethod.GET -> {
+            // TODO change the header to application/x-www-form-urlencoded
+            val req = Unirest.get(url)
+                .header("Content-Type", "application/json")
+            if (body != null) {
+              throw RuntimeException("error in specification; GET requests cannot have a body")
+            }
+            if (!form.isEmpty()) {
+              throw RuntimeException("error in specification; GET requests cannot have form parameters")
+            }
+            query.forEach({ name, value -> req.queryString(name, value) })
+            path.forEach { k, v -> req.routeParam(k, v.toString()) }
+            header.forEach { k, v -> req.header(k, v.toString()) }
+            req
+          }
+          HttpMethod.POST -> {
+            val req = Unirest.post(url)
+                .header("Content-Type", "application/json")
+            addParams(req)
+            req
+          }
+          HttpMethod.PUT -> {
+            val req = Unirest.put(url)
+                .header("Content-Type", "application/json")
+            addParams(req)
+            req
+          }
+          HttpMethod.PATCH -> {
+            val req = Unirest.patch(url)
+                .header("Content-Type", "application/json")
+            addParams(req)
+            req
+          }
+          HttpMethod.DELETE -> {
+            val req = Unirest.delete(url)
+                .header("Content-Type", "application/json")
+            addParams(req)
+            req
+          }
+          else ->
+            // TODO head and options
+            throw NotImplementedException(method.toString())
         }
-        if (!form.isEmpty()) {
-          throw RuntimeException("error in specification; GET requests cannot have form parameters")
-        }
-        query.forEach({ name, value -> req.queryString(name, value) })
-        path.forEach { k, v -> req.routeParam(k, v.toString()) }
-        header.forEach { k, v -> req.header(k, v.toString()) }
-        req
-      }
-      HttpMethod.POST -> {
-        val req = Unirest.post(url)
-            .header("Content-Type", "application/json")
-        addParams(req)
-        req
-      }
-      HttpMethod.PUT -> {
-        val req = Unirest.put(url)
-            .header("Content-Type", "application/json")
-        addParams(req)
-        req
-      }
-      HttpMethod.PATCH -> {
-        val req = Unirest.patch(url)
-            .header("Content-Type", "application/json")
-        addParams(req)
-        req
-      }
-      HttpMethod.DELETE -> {
-        val req = Unirest.delete(url)
-            .header("Content-Type", "application/json")
-        addParams(req)
-        req
-      }
-      else ->
-        // TODO head and options
-        throw NotImplementedException(method.toString())
-    }
     this.request = request
     return request
   }
@@ -151,9 +152,7 @@ class Request(private val url: String,
 
     if (body != null) {
       sb.append("-d '").append(
-          //        StringEscapeUtils.escapeJson(
-          body.toString()
-          //        )
+          StringEscapeUtils.escapeJson(body.toString())
       ).append("'")
     } else if (!form.isEmpty()) {
       // sb.append('\n');
