@@ -7,7 +7,8 @@ import com.mashape.unirest.request.HttpRequest
 import com.mashape.unirest.request.HttpRequestWithBody
 import io.swagger.models.HttpMethod
 import org.apache.commons.lang3.NotImplementedException
-import org.apache.commons.lang3.StringEscapeUtils
+import org.apache.commons.lang3.StringEscapeUtils.*
+import java.net.URLEncoder.encode
 
 /**
  * A fully-generated HTTP request.
@@ -145,20 +146,30 @@ class Request(private val url: String,
 
     if (!query.isEmpty()) {
       sb.append('?').append(
-          query.entries.joinToString(separator = "&") { e -> sb.append(e.key).append('=').append(e.value) })
+          query.entries.joinToString(separator = "&") { e ->
+            sb.append(e.key)
+                .append('=')
+                .append(encode(e.value.toString(), "UTF-8"))
+          })
     }
 
-    header.forEach { k, v -> sb.append("-H ").append(k).append(' ').append(v).append(' ') }
+    header.forEach { k, v ->
+      sb.append("-H ")
+          .append(k)
+          .append(' ')
+          .append(v)
+          .append(' ')
+    }
 
     if (body != null) {
-      sb.append("-d '").append(
-          StringEscapeUtils.escapeJson(body.toString())
-      ).append("'")
-    } else if (!form.isEmpty()) {
-      // sb.append('\n');
       sb.append("-d '")
-          .append(form.entries
-              .joinToString(separator = "&") { e -> e.key + "=" + e.value })
+          .append(escapeJson(body.toString()))
+          .append("'")
+    } else if (!form.isEmpty()) {
+      sb.append("-d '")
+          .append(form.entries.joinToString(separator = "&") { e ->
+            e.key + "=" + encode(e.value.toString(), "UTF-8")
+          })
           .append("'")
     }
 
