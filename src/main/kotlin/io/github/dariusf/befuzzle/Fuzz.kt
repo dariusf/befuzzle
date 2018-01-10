@@ -69,25 +69,33 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
         return if (prop.enum != null) {
           pick(prop.enum)
         } else {
-          longs().all()
+          oneOf(longs().between(-3L, 3L),
+              constant(Long.MAX_VALUE),
+              constant(Long.MIN_VALUE))
         }.map(Jackson::fromObject)
       is IntegerProperty ->
         return if (prop.enum != null) {
           pick(prop.enum)
         } else {
-          integers().all()
+          oneOf(integers().between(-3, 3),
+              constant(Int.MAX_VALUE),
+              constant(Int.MIN_VALUE))
         }.map(Jackson::fromObject)
       is FloatProperty ->
         return if (prop.enum != null) {
           pick(prop.enum)
         } else {
-          floats().any()
+          oneOf(floats().between(-3f, 3f),
+              constant(Float.MAX_VALUE),
+              constant(Float.MIN_VALUE))
         }.map(Jackson::fromObject)
       is DoubleProperty ->
         return if (prop.enum != null) {
           pick(prop.enum)
         } else {
-          doubles().any()
+          oneOf(doubles().between(-3.0, 3.0),
+              constant(Double.MAX_VALUE),
+              constant(Double.MIN_VALUE))
         }.map(Jackson::fromObject)
       is StringProperty ->
         // TODO check pattern
