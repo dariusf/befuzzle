@@ -58,8 +58,8 @@ class Request(private val url: String,
               throw RuntimeException("error in specification; GET requests cannot have form parameters")
             }
             query.forEach({ name, value -> req.queryString(name, value) })
-            path.forEach { k, v -> req.routeParam(k, v.toString()) }
-            header.forEach { k, v -> req.header(k, v.toString()) }
+            path.forEach { k, v -> req.routeParam(k, v.asText()) }
+            header.forEach { k, v -> req.header(k, v.asText()) }
             req
           }
           HttpMethod.POST -> {
@@ -102,8 +102,8 @@ class Request(private val url: String,
       req.body(body)
     }
     query.forEach({ name, value -> req.queryString(name, value) })
-    path.forEach { k, v -> req.routeParam(k, v.toString()) }
-    header.forEach { k, v -> req.header(k, v.toString()) }
+    path.forEach { k, v -> req.routeParam(k, v.asText()) }
+    header.forEach { k, v -> req.header(k, v.asText()) }
     form.forEach({ name, value -> req.field(name, value) })
   }
 
@@ -163,49 +163,15 @@ class Request(private val url: String,
 
     if (body != null) {
       sb.append("-d '")
-          .append(escapeJson(body.toString()))
+          .append(escapeJson(body.asText()))
           .append("'")
     } else if (!form.isEmpty()) {
       sb.append("-d '")
           .append(form.entries.joinToString(separator = "&") { e ->
-            e.key + "=" + encode(e.value.toString(), "UTF-8")
+            e.key + "=" + encode(e.value.asText(), "UTF-8")
           })
           .append("'")
     }
-
-    return sb.toString()
-  }
-
-  /**
-   * Displays a HTTP request in a human-readable but non-standard way.
-   */
-  private fun prettyPrint(): String {
-    val sb = StringBuilder()
-    sb.append(method).append(" ")
-        .append(url) // non-standard, should be host
-
-    if (!query.isEmpty()) {
-      sb.append('?').append(
-          query.entries
-              .joinToString(separator = "&") { e -> sb.append(e.key).append("=").append(e.value) })
-    }
-
-    sb.append('\n')
-    header.forEach { k, v -> sb.append(k).append(": ").append(v).append('\n') }
-
-    // non-standard
-    path.forEach { k, v -> sb.append("{").append(k).append("}").append(": ").append(v).append('\n') }
-
-    if (body != null) {
-      val b = body.toString()
-      // sb.append('\n');
-      sb.append(if (b.isEmpty()) "<empty>" else b)
-    } else if (!form.isEmpty()) {
-      // sb.append('\n');
-      sb.append(form.entries
-          .joinToString(separator = "&") { e -> e.key + "=" + e.value })
-    }
-    sb.append('\n')
 
     return sb.toString()
   }
