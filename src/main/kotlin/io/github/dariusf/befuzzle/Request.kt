@@ -141,7 +141,7 @@ class Request(private val url: String,
       instantiatedUrl = instantiatedUrl.replace("\\{$key}".toRegex(), value.toString())
     }
 
-    sb.append("curl ")
+    sb.append("curl -v ")
         .append("-X ").append(method).append(' ')
 
     sb.append(instantiatedUrl).append(' ')
@@ -165,7 +165,7 @@ class Request(private val url: String,
 
     if (body != null) {
       sb.append("-d '")
-          .append(escapeJson(body.asText()))
+          .append(body.toString())
           .append("'")
     } else if (!form.isEmpty()) {
       sb.append("-d '")
@@ -179,6 +179,8 @@ class Request(private val url: String,
   }
 
   companion object {
+
+
     private fun is200(status: Int): Boolean {
       return status in 200..299
     }
