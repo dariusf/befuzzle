@@ -7,7 +7,6 @@ import com.mashape.unirest.request.HttpRequest
 import com.mashape.unirest.request.HttpRequestWithBody
 import io.swagger.models.HttpMethod
 import org.apache.commons.lang3.NotImplementedException
-import org.apache.commons.lang3.StringEscapeUtils.*
 import java.net.URLEncoder.encode
 
 /**
@@ -30,10 +29,10 @@ class Request(private val url: String,
               header: Map<String, JsonNode>,
               form: Map<String, JsonNode>) : this(url, method, null, query, path, header, form)
 
-  fun check(responses: Set<Int>): Boolean {
+  fun check(config: Config, declaredResponses: Set<Int>): Boolean {
     println(this)
     try {
-      return checkRequest(buildRequest(), responses)
+      return checkRequest(buildRequest(), config, declaredResponses)
     } catch (e: UnirestException) {
       throw RuntimeException(e)
     }
@@ -110,10 +109,14 @@ class Request(private val url: String,
    * Returns true if everything is okay.
    */
   @Throws(UnirestException::class)
-  private fun checkRequest(req: HttpRequest, responses: Set<Int>): Boolean {
+  private fun checkRequest(req: HttpRequest, config: Config, declaredResponses: Set<Int>): Boolean {
     val response = req.asString()
     val status = response.status
-    return !is500(status) && (is200(status) || status in responses)
+
+    if (is500(status)) {
+      return false
+    }
+    return is200(status) || config.allowUndeclared || status in declaredResponses
   }
 
   override fun toString(): String {

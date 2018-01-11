@@ -10,7 +10,8 @@ import org.quicktheories.generators.Generate.constant
 /**
  * An API test case that hasn't been made concrete.
  */
-class TestCase(private val host: String,
+class TestCase(private val config: Config,
+               private val host: String,
                val endpoint: String,
                private val port: Int,
                val method: HttpMethod,
@@ -19,12 +20,12 @@ class TestCase(private val host: String,
                private val path: Gen<Map<String, JsonNode>>,
                private val header: Gen<Map<String, JsonNode>>,
                private val form: Gen<Map<String, JsonNode>>,
-               private val expectedResponses: Set<Int>) {
+               private val declaredResponses: Set<Int>) {
 
   fun execute() {
     QuickTheory.qt()
         .forAll(generator())
-        .check({ g -> g.check(expectedResponses) })
+        .check({ g -> g.check(config, declaredResponses) })
   }
 
   private fun generator(): Gen<Request> {

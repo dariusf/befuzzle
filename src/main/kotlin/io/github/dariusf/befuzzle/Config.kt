@@ -13,6 +13,7 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
   val port: Int
   val input: String
   val proxyURL: URL?
+  val allowUndeclared: Boolean
 
   companion object {
 
@@ -38,6 +39,7 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
     val options = Options()
     options.addOption("h", "host", true, "the host to hit [default: localhost]")
     options.addOption("p", "port", true, "the port of the host to hit [default: 8080]")
+    options.addOption(null, "allow-undeclared", false, "allow undeclared HTTP response codes")
     options.addOption(null, "help", false, "print usage info")
     val parser = DefaultParser()
     val cmd = parser.parse(options, args)
@@ -51,6 +53,7 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
     } catch (e: Exception) {
       throw ParseException("invalid port " + portS)
     }
+    allowUndeclared = cmd.hasOption("allow-undeclared")
     if (cmd.argList.size != 1) {
       help(options)
     }
