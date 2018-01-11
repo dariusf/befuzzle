@@ -2,6 +2,7 @@ package io.github.dariusf.befuzzle
 
 import com.fasterxml.jackson.databind.JsonNode
 import io.swagger.models.HttpMethod
+import org.apache.http.client.utils.URIBuilder
 import org.quicktheories.QuickTheory
 import org.quicktheories.core.Gen
 import org.quicktheories.generators.Generate.constant
@@ -31,13 +32,17 @@ class TestCase(private val host: String,
         path.flatMap { ps ->
           query.flatMap<Request> { qs ->
 
-            // TODO better type
-            val url = "http://$host:$port$endpoint"
+            val url = URIBuilder()
+                .setScheme("http")
+                .setHost(host)
+                .setPort(port)
+                .setPath(endpoint)
+                .build().toASCIIString()
 
             if (body == null) {
               constant(Request(url, method, qs, ps, hs, fs))
             } else {
-              body.map { b -> Request(url, method, b, qs, ps, hs, fs) }
+              body.map { bd -> Request(url, method, bd, qs, ps, hs, fs) }
             }
           }
         }
