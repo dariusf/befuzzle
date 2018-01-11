@@ -30,14 +30,13 @@ class Request(private val url: String,
               header: Map<String, JsonNode>,
               form: Map<String, JsonNode>) : this(url, method, null, query, path, header, form)
 
-  fun check(): Boolean {
+  fun check(responses: Set<Int>): Boolean {
     println(this)
     try {
-      return checkRequest(buildRequest())
+      return checkRequest(buildRequest(), responses)
     } catch (e: UnirestException) {
       throw RuntimeException(e)
     }
-
   }
 
   private fun buildRequest(): HttpRequest {
@@ -107,11 +106,14 @@ class Request(private val url: String,
     form.forEach({ name, value -> req.field(name, value) })
   }
 
+  /**
+   * Returns true if everything is okay.
+   */
   @Throws(UnirestException::class)
-  private fun checkRequest(req: HttpRequest): Boolean {
+  private fun checkRequest(req: HttpRequest, responses: Set<Int>): Boolean {
     val response = req.asString()
-    // TODO check that the responses are in the expected set
-    return response.status < 500 || response.status >= 600
+    val status = response.status
+    return !is500(status) && (is200(status) || status in responses)
   }
 
   override fun toString(): String {
@@ -174,5 +176,15 @@ class Request(private val url: String,
     }
 
     return sb.toString()
+  }
+
+  companion object {
+    private fun is200(status: Int): Boolean {
+      return status in 200..299
+    }
+
+    private fun is500(status: Int): Boolean {
+      return status in 500..599
+    }
   }
 }

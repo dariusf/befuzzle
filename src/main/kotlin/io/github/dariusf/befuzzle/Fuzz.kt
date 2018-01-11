@@ -387,9 +387,14 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
                     throw NotImplementedException("need to handle other parameter types: " + params)
                   }
 
+                  val expectedResponses = oe.value.responses.keys
+                      .filter { it != "default" }
+                      .map(Integer::parseInt).toSet()
+
+                  oe.value.responses.entries
                   arrayListOf(
                       TestCase(config.host, endpoint, config.port, method, bodyGen, queryGen,
-                          pathGen, headerGen, formGen)
+                          pathGen, headerGen, formGen, expectedResponses)
                   )
                 }
           }

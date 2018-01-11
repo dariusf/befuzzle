@@ -18,12 +18,13 @@ class TestCase(private val host: String,
                private val query: Gen<Map<String, JsonNode>>,
                private val path: Gen<Map<String, JsonNode>>,
                private val header: Gen<Map<String, JsonNode>>,
-               private val form: Gen<Map<String, JsonNode>>) {
+               private val form: Gen<Map<String, JsonNode>>,
+               private val expectedResponses: Set<Int>) {
 
   fun execute() {
     QuickTheory.qt()
         .forAll(generator())
-        .check({ it.check() })
+        .check({ g -> g.check(expectedResponses) })
   }
 
   private fun generator(): Gen<Request> {
