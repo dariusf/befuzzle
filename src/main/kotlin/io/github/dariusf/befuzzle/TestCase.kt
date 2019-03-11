@@ -25,7 +25,7 @@ class TestCase(private val config: Config,
   fun execute() {
     QuickTheory.qt()
         .forAll(generator())
-        .check({ g -> g.check(config, declaredResponses) })
+        .check { g -> g.check(config, declaredResponses) }
   }
 
   private fun generator(): Gen<Request> {

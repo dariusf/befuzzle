@@ -384,7 +384,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
                         p is FormParameter ||
                         p is HeaderParameter)
                   }) {
-                    throw NotImplementedException("need to handle other parameter types: " + params)
+                    throw NotImplementedException("need to handle other parameter types: $params")
                   }
 
                   val declaredResponses = oe.value.responses.keys

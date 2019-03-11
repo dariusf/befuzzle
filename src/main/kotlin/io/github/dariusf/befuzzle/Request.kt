@@ -55,7 +55,7 @@ class Request(private val url: String,
             if (!form.isEmpty()) {
               throw RuntimeException("error in specification; GET requests cannot have form parameters")
             }
-            query.forEach({ name, value -> req.queryString(name, value) })
+            query.forEach { name, value -> req.queryString(name, value) }
             path.forEach { k, v -> req.routeParam(k, v.asText()) }
             header.forEach { k, v -> req.header(k, v.asText()) }
             req
