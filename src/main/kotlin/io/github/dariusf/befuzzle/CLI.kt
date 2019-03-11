@@ -2,7 +2,6 @@ package io.github.dariusf.befuzzle
 
 import com.mashape.unirest.http.Unirest
 import org.apache.http.HttpHost
-import org.apache.http.client.utils.URIBuilder
 import org.apache.http.impl.client.HttpClientBuilder
 import org.slf4j.LoggerFactory
 import org.zalando.logbook.DefaultHttpLogWriter
@@ -41,11 +40,8 @@ object CLI {
 
     val testCase = testCases[choice]
 
-    val url = URIBuilder()
-        .setScheme("http")
-        .setHost(config.host)
-        .setPort(config.port)
-        .build().toASCIIString()
+    // TODO better url type
+    val url = String.format("http://%s:%d", config.host, config.port)
 
     System.out.printf("\nYou are about to send up to %d requests to %s.\n" +
         "Hit Enter to confirm.\n? ",
