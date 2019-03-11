@@ -23,7 +23,7 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
 
     private fun help(options: Options) {
       val formatter = HelpFormatter()
-      formatter.printHelp(NAME + " [spec]", options)
+      formatter.printHelp("$NAME [spec]", options)
       System.exit(0)
     }
 
@@ -31,7 +31,7 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
       if (cmd.hasOption(name)) {
         return cmd.getOptionValue(name)
       }
-      throw IllegalArgumentException(name + " is not a valid argument")
+      throw IllegalArgumentException("$name is not a valid argument")
     }
   }
 
@@ -51,7 +51,7 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
     try {
       port = Integer.parseInt(portS)
     } catch (e: Exception) {
-      throw ParseException("invalid port " + portS)
+      throw ParseException("invalid port $portS")
     }
     allowUndeclared = cmd.hasOption("allow-undeclared")
     if (cmd.argList.size != 1) {

@@ -114,8 +114,8 @@ object CLI {
 
     if (config.proxyURL != null) {
       Unirest.setProxy(HttpHost(
-          config.proxyURL.getHost(),
-          config.proxyURL.getPort()));
+          config.proxyURL.host,
+          config.proxyURL.port))
     }
   }
 }
