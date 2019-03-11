@@ -2,6 +2,14 @@
 
 set -e
 
-mvn -DskipTests clean package
+mkdir -p target
+JARS="$(find target -name '*.jar')"
 
-java -jar target/fuzz-*.jar $@
+if [ -z "$JARS" ]; then
+  echo Compiling...
+  if ! mvn -DskipTests clean package > /tmp/bflog 2>&1; then
+    cat /tmp/bflog
+  fi
+fi
+
+java -jar target/fuzz-*.jar "$@"
