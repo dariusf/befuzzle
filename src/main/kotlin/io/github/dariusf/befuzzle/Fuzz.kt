@@ -103,6 +103,14 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
               constant(Double.POSITIVE_INFINITY),
               constant(Double.NaN))
         }.map(Jackson::fromObject)
+      is DecimalProperty ->
+        // Numbers with an unspecified format. The format property is
+        // intended to be human-readable and is nullable, so it's not very
+        // useful. We just try to reduce this into other cases we know about.
+        return oneOf(
+            propertyGen(IntegerProperty()), // one is nullable
+            propertyGenAux(DoubleProperty()))
+            .map(Jackson::fromObject)
       is StringProperty ->
         // TODO check pattern
         return if (prop.enum != null) {
@@ -196,7 +204,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
         }
 
       }
-      else -> throw NotImplementedException("need to handle other model types: " + model)
+      else -> throw NotImplementedException("need to handle other model types: $model")
     }
   }
 
