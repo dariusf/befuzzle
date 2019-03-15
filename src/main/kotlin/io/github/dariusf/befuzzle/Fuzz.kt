@@ -236,6 +236,16 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
               when (qp.type) {
                 "string" ->
                   propertyGen(qp.name, StringProperty())
+                "integer" ->
+                  when (qp.format) {
+                    "int64" -> propertyGen(qp.name, LongProperty())
+                    else -> propertyGen(qp.name, IntegerProperty())
+                  }
+                "number" ->
+                  when (qp.format) {
+                    "double" -> propertyGen(qp.name, DoubleProperty())
+                    else -> propertyGen(qp.name, DecimalProperty())
+                  }
                 else -> throw NotImplementedException("unimplemented type " + qp.type)
               }
             } else {
@@ -275,18 +285,17 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
     if (pathParams.isEmpty()) {
       pathGen = constant(HashMap())
     } else {
-      val generators = pathParams.map { qp ->
-
-        when (qp.type) {
+      val generators = pathParams.map { pp ->
+        when (pp.type) {
           "string" ->
-            propertyGen(qp.name, StringProperty())
+            propertyGen(pp.name, StringProperty())
           "integer"
-          -> if (qp.format == "int64") {
-            propertyGen(qp.name, LongProperty())
+          -> if (pp.format == "int64") {
+            propertyGen(pp.name, LongProperty())
           } else {
-            propertyGen(qp.name, IntegerProperty())
+            propertyGen(pp.name, IntegerProperty())
           }
-          else -> throw NotImplementedException("unimplemented type " + qp.type)
+          else -> throw NotImplementedException("unimplemented type " + pp.type)
         }
       }
 
@@ -307,21 +316,21 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
     if (formParams.isEmpty()) {
       formGen = constant(HashMap())
     } else {
-      val generators = formParams.map { qp ->
+      val generators = formParams.map { fp ->
 
-        when (qp.type) {
+        when (fp.type) {
           "string" ->
-            propertyGen(qp.name, StringProperty())
+            propertyGen(fp.name, StringProperty())
           "integer"
-          -> if (qp.format == "int64") {
-            propertyGen(qp.name, LongProperty())
+          -> if (fp.format == "int64") {
+            propertyGen(fp.name, LongProperty())
           } else {
-            propertyGen(qp.name, IntegerProperty())
+            propertyGen(fp.name, IntegerProperty())
           }
           "file" ->
             // TODO bogus implementation; we might have to use a type other than JsonNode to create files
-            propertyGen(qp.name, StringProperty())
-          else -> throw NotImplementedException("unimplemented type " + qp.type)
+            propertyGen(fp.name, StringProperty())
+          else -> throw NotImplementedException("unimplemented type " + fp.type)
         }
 
       }
@@ -344,19 +353,19 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
       headerGen = constant(HashMap())
     } else {
       val generators = headerParams
-          .map { qp ->
-
-            when (qp.type) {
+          .map { hp ->
+            when (hp.type) {
               "string" ->
                 // TODO header parameters must be ascii
-                propertyGen(qp.name, StringProperty())
-              "integer"
-              -> if (qp.format == "int64") {
-                propertyGen(qp.name, LongProperty())
-              } else {
-                propertyGen(qp.name, IntegerProperty())
-              }
-              else -> throw NotImplementedException("unimplemented type " + qp.type)
+                propertyGen(hp.name, StringProperty())
+              "integer" ->
+                when (hp.format) {
+                  "int64" ->
+                    propertyGen(hp.name, LongProperty())
+                  else -> propertyGen(hp.name, IntegerProperty())
+                }
+              "array" -> propertyGen(hp.name, ArrayProperty(hp.items))
+              else -> throw NotImplementedException("unimplemented type " + hp.type)
             }
 
           }
