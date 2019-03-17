@@ -15,19 +15,19 @@ import java.net.URLEncoder.encode
 class Request(private val url: String,
               private val method: HttpMethod,
               private val body: JsonNode?,
-              private val query: Map<String, JsonNode>,
-              private val path: Map<String, JsonNode>,
-              private val header: Map<String, JsonNode>,
-              private val form: Map<String, JsonNode>) {
+              private val query: Map<String, String>,
+              private val path: Map<String, String>,
+              private val header: Map<String, String>,
+              private val form: Map<String, String>) {
 
   @Transient private var request: HttpRequest? = null
 
   constructor(url: String,
               method: HttpMethod,
-              query: Map<String, JsonNode>,
-              path: Map<String, JsonNode>,
-              header: Map<String, JsonNode>,
-              form: Map<String, JsonNode>) : this(url, method, null, query, path, header, form)
+              query: Map<String, String>,
+              path: Map<String, String>,
+              header: Map<String, String>,
+              form: Map<String, String>) : this(url, method, null, query, path, header, form)
 
   fun check(config: Config, declaredResponses: Set<Int>): Boolean {
     println(this)
@@ -56,8 +56,8 @@ class Request(private val url: String,
               throw RuntimeException("error in specification; GET requests cannot have form parameters")
             }
             query.forEach { name, value -> req.queryString(name, value) }
-            path.forEach { k, v -> req.routeParam(k, v.asText()) }
-            header.forEach { k, v -> req.header(k, v.asText()) }
+            path.forEach { k, v -> req.routeParam(k, v) }
+            header.forEach { k, v -> req.header(k, v) }
             req
           }
           HttpMethod.POST -> {
@@ -99,10 +99,10 @@ class Request(private val url: String,
     if (body != null) {
       req.body(body)
     }
-    query.forEach({ name, value -> req.queryString(name, value) })
-    path.forEach { k, v -> req.routeParam(k, v.asText()) }
-    header.forEach { k, v -> req.header(k, v.asText()) }
-    form.forEach({ name, value -> req.field(name, value) })
+    query.forEach { name, value -> req.queryString(name, value) }
+    path.forEach { k, v -> req.routeParam(k, v) }
+    header.forEach { k, v -> req.header(k, v) }
+    form.forEach { name, value -> req.field(name, value) }
   }
 
   /**
@@ -173,7 +173,7 @@ class Request(private val url: String,
     } else if (!form.isEmpty()) {
       sb.append("-d '")
           .append(form.entries.joinToString(separator = "&") { e ->
-            e.key + "=" + encode(e.value.asText(), "UTF-8")
+            e.key + "=" + encode(e.value, "UTF-8")
           })
           .append("'")
     }

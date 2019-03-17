@@ -1,14 +1,30 @@
 package io.github.dariusf.befuzzle
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.node.NullNode
 import io.github.dariusf.befuzzle.Traversable.sequence
 import io.swagger.models.ArrayModel
 import io.swagger.models.Model
 import io.swagger.models.ModelImpl
 import io.swagger.models.RefModel
-import io.swagger.models.parameters.*
-import io.swagger.models.properties.*
+import io.swagger.models.parameters.BodyParameter
+import io.swagger.models.parameters.FormParameter
+import io.swagger.models.parameters.HeaderParameter
+import io.swagger.models.parameters.Parameter
+import io.swagger.models.parameters.PathParameter
+import io.swagger.models.parameters.QueryParameter
+import io.swagger.models.properties.ArrayProperty
+import io.swagger.models.properties.BooleanProperty
+import io.swagger.models.properties.DateTimeProperty
+import io.swagger.models.properties.DecimalProperty
+import io.swagger.models.properties.DoubleProperty
+import io.swagger.models.properties.FloatProperty
+import io.swagger.models.properties.IntegerProperty
+import io.swagger.models.properties.LongProperty
+import io.swagger.models.properties.MapProperty
+import io.swagger.models.properties.ObjectProperty
+import io.swagger.models.properties.Property
+import io.swagger.models.properties.RefProperty
+import io.swagger.models.properties.StringProperty
 import io.swagger.parser.SwaggerParser
 import org.apache.commons.lang3.NotImplementedException
 import org.quicktheories.WithQuickTheories
@@ -23,7 +39,7 @@ import java.util.*
  */
 class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
 
-  private var definitions: Map<String, Gen<JsonNode>>
+  private var definitions: Map<String, Gen<Any>>
 
   init {
     this.definitions = swaggerDefs.entries
@@ -38,9 +54,9 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
   private inner class DynamicGen internal constructor(
       private val key: String,
       private val definition: String
-  ) : Gen<Prop<JsonNode>> {
-    override fun generate(`in`: RandomnessSource): Prop<JsonNode> {
-      return Prop(key, definitions[definition]!!.generate(`in`))
+  ) : Gen<Prop<Any>> {
+    override fun generate(`in`: RandomnessSource): Prop<Any> {
+      return Prop(key, definitions.getValue(definition).generate(`in`))
     }
   }
 
@@ -49,7 +65,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
    */
   private class Prop<out T>(internal val name: String, internal val value: T)
 
-  private fun propertyGen(name: String, prop: Property): Gen<Prop<JsonNode>> {
+  private fun propertyGen(name: String, prop: Property): Gen<Prop<Any>> {
     return propertyGen(prop)
         .map { o -> Prop(name, o) }
   }
@@ -57,13 +73,13 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
   /**
    * Every property is nullable...
    */
-  private fun propertyGen(prop: Property): Gen<JsonNode> {
+  private fun propertyGen(prop: Property): Gen<Any> {
     return oneOf(
-        constant<JsonNode> { NullNode.instance },
+        constant("null") as Gen<Any>, // the null literal isn't allowed in generators
         propertyGenAux(prop))
   }
 
-  private fun propertyGenAux(prop: Property): Gen<JsonNode> {
+  private fun propertyGenAux(prop: Property): Gen<Any> {
     when (prop) {
       is LongProperty ->
         return if (prop.enum != null) {
@@ -72,7 +88,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
           oneOf(longs().between(-3L, 3L),
               constant(Long.MAX_VALUE),
               constant(Long.MIN_VALUE))
-        }.map(Jackson::fromObject)
+        } as Gen<Any>
       is IntegerProperty ->
         return if (prop.enum != null) {
           pick(prop.enum)
@@ -80,7 +96,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
           oneOf(integers().between(-3, 3),
               constant(Int.MAX_VALUE),
               constant(Int.MIN_VALUE))
-        }.map(Jackson::fromObject)
+        } as Gen<Any>
       is FloatProperty ->
         return if (prop.enum != null) {
           pick(prop.enum)
@@ -91,7 +107,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
               constant(Float.NEGATIVE_INFINITY),
               constant(Float.POSITIVE_INFINITY),
               constant(Float.NaN))
-        }.map(Jackson::fromObject)
+        } as Gen<Any>
       is DoubleProperty ->
         return if (prop.enum != null) {
           pick(prop.enum)
@@ -102,7 +118,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
               constant(Double.NEGATIVE_INFINITY),
               constant(Double.POSITIVE_INFINITY),
               constant(Double.NaN))
-        }.map(Jackson::fromObject)
+        } as Gen<Any>
       is DecimalProperty ->
         // Numbers with an unspecified format. The format property is
         // intended to be human-readable and is nullable, so it's not very
@@ -110,7 +126,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
         return oneOf(
             propertyGen(IntegerProperty()), // one is nullable
             propertyGenAux(DoubleProperty()))
-            .map(Jackson::fromObject)
+            as Gen<Any>
       is StringProperty ->
         // TODO check pattern
         return if (prop.enum != null) {
@@ -119,12 +135,12 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
           val min = prop.minLength ?: 0
           val max = prop.maxLength ?: 5
           stringGen(min, max)
-        }.map(Jackson::fromObject)
+        } as Gen<Any>
       is BooleanProperty ->
-        return Generate.booleans().map(Jackson::fromObject)
+        return Generate.booleans() as Gen<Any>
       is DateTimeProperty ->
         //      return dates().withMilliseconds(new Date().getTime())
-        return constant<String>(Utility::nowISO8601).map(Jackson::fromObject)
+        return constant<String>(Utility::nowISO8601) as Gen<Any>
     //      2017-12-28T16:30:11.853+0000
       is ArrayProperty -> {
         val itemP = prop.items
@@ -135,21 +151,21 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
           val min = prop.minItems ?: 0
           val max = prop.maxItems ?: 5
           lists().of(items).ofSizeBetween(min, max)
-        }.map(Jackson::fromObject)
+        } as Gen<Any>
       }
       is MapProperty -> {
         val value = prop.additionalProperties
         val keys = stringGen(0, 5)
         val values = propertyGen(value)
         return maps().of(keys, values).ofSize(4)
-            .map(Jackson::fromObject)
+            as Gen<Any>
       }
       is ObjectProperty -> {
         // TODO check how object works
         val keys = stringGen(0, 5)
         val values = stringGen(0, 5)
         return maps().of(keys, values).ofSize(4)
-            .map(Jackson::fromObject)
+            as Gen<Any>
       }
       is RefProperty ->
         throw IllegalStateException("this should have been handled before this point")
@@ -160,13 +176,11 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
 
   private fun stringGen(min: Int, max: Int): Gen<String> {
     return oneOf(
-        constant("null"),
-        constant("nil"),
         strings().allPossible().ofLengthBetween(min, max),
         strings().basicLatinAlphabet().ofLengthBetween(min, max))
   }
 
-  fun modelGen(model: Model): Gen<JsonNode> {
+  fun modelGen(model: Model): Gen<Any> {
 
     when (model) {
       is ModelImpl -> {
@@ -174,7 +188,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
         // May happen for interfaces
         if (model.getProperties() == null) {
           // TODO might want to pull this out
-          return constant(Jackson.fromObject(Jackson.MAPPER.createObjectNode()))
+          return constant(mapOf<String, Any>())
         }
         val generators = model.properties.entries.map { (k, v) ->
 
@@ -185,9 +199,8 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
           }
         }
 
-        val sequence: Gen<List<Prop<JsonNode>>> = sequence(generators)
+        val sequence: Gen<List<Prop<Any>>> = sequence(generators)
         return sequence.map { l -> l.map { k -> k.name to k.value }.toMap() }
-            .map(Jackson::fromObject)
       }
       is RefModel -> {
         val defName = model.simpleRef
@@ -208,17 +221,17 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
     }
   }
 
-  private fun dynamicGen(p: RefProperty): Gen<JsonNode> {
+  private fun dynamicGen(p: RefProperty): Gen<Any> {
     return dynamicGen("", p).map { x -> x.value }
   }
 
-  private fun dynamicGen(key: String, p: RefProperty): Gen<Prop<JsonNode>> {
+  private fun dynamicGen(key: String, p: RefProperty): Gen<Prop<Any>> {
     val name = p.simpleRef
     return DynamicGen(key, name)
   }
 
-  private fun queryParamsGenerator(params: List<Parameter>): Gen<Map<String, JsonNode>> {
-    val queryGen: Gen<Map<String, JsonNode>>
+  private fun queryParamsGenerator(params: List<Parameter>): Gen<Map<String, String>> {
+    val queryGen: Gen<Map<String, String>>
     val queryParams = params
         .filter { p -> p is QueryParameter }
         .map { p -> p as QueryParameter }
@@ -255,7 +268,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
           }
 
       queryGen = sequence(generators).map { l ->
-        l.map { p -> p.name to p.value }.toMap()
+        l.map { p -> p.name to p.value.toString() }.toMap()
       }
     }
     return queryGen
@@ -270,14 +283,14 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
       bodyParams.size == 1 -> {
         val body = bodyParams[0]
         val schema = body.schema
-        modelGen(schema)
+        modelGen(schema).map(Jackson::fromObject)
       }
       else -> null
     }
   }
 
-  private fun pathParamsGenerator(params: List<Parameter>): Gen<Map<String, JsonNode>> {
-    val pathGen: Gen<Map<String, JsonNode>>
+  private fun pathParamsGenerator(params: List<Parameter>): Gen<Map<String, String>> {
+    val pathGen: Gen<Map<String, String>>
     val pathParams = params
         .filter { p -> p is PathParameter }
         .map { p -> p as PathParameter }
@@ -301,14 +314,14 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
 
       val sequence = sequence(generators)
       pathGen = sequence.map { l ->
-        l.map { p -> p.name to p.value }.toMap()
+        l.map { p -> p.name to p.value.toString() }.toMap()
       }
     }
     return pathGen
   }
 
-  private fun formParamsGenerator(params: List<Parameter>): Gen<Map<String, JsonNode>> {
-    val formGen: Gen<Map<String, JsonNode>>
+  private fun formParamsGenerator(params: List<Parameter>): Gen<Map<String, String>> {
+    val formGen: Gen<Map<String, String>>
     val formParams = params
         .filter { p -> p is FormParameter }
         .map { p -> p as FormParameter }
@@ -337,14 +350,14 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
 
       val sequence = sequence(generators)
       formGen = sequence.map { l ->
-        l.map { p -> p.name to p.value }.toMap()
+        l.map { p -> p.name to p.value.toString() }.toMap()
       }
     }
     return formGen
   }
 
-  private fun headerParamsGenerator(params: List<Parameter>): Gen<Map<String, JsonNode>> {
-    val headerGen: Gen<Map<String, JsonNode>>
+  private fun headerParamsGenerator(params: List<Parameter>): Gen<Map<String, String>> {
+    val headerGen: Gen<Map<String, String>>
     val headerParams = params
         .filter { p -> p is HeaderParameter }
         .map { p -> p as HeaderParameter }
@@ -372,7 +385,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
 
       val sequence = sequence(generators)
       headerGen = sequence.map { l ->
-        l.map { p -> p.name to p.value }.toMap()
+        l.map { p -> p.name to p.value.toString() }.toMap()
       }
     }
     return headerGen

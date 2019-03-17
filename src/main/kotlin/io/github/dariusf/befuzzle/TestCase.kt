@@ -15,10 +15,10 @@ class TestCase(private val config: Config,
                private val port: Int,
                val method: HttpMethod,
                private val body: Gen<JsonNode>?,
-               private val query: Gen<Map<String, JsonNode>>,
-               private val path: Gen<Map<String, JsonNode>>,
-               private val header: Gen<Map<String, JsonNode>>,
-               private val form: Gen<Map<String, JsonNode>>,
+               private val query: Gen<Map<String, String>>,
+               private val path: Gen<Map<String, String>>,
+               private val header: Gen<Map<String, String>>,
+               private val form: Gen<Map<String, String>>,
                private val declaredResponses: Set<Int>) {
 
   fun execute() {
