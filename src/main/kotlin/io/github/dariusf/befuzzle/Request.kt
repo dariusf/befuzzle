@@ -8,6 +8,8 @@ import com.mashape.unirest.request.HttpRequestWithBody
 import io.swagger.models.HttpMethod
 import org.apache.commons.lang3.NotImplementedException
 import java.net.URLEncoder.encode
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 /**
  * A fully-generated HTTP request.
@@ -141,7 +143,7 @@ class Request(private val url: String,
 
     var instantiatedUrl = url
     for ((key, value) in path) {
-      instantiatedUrl = instantiatedUrl.replace("\\{$key}".toRegex(), value.toString())
+      instantiatedUrl = instantiatedUrl.replace("\\{${Pattern.quote(key)}}".toRegex(), Matcher.quoteReplacement(value))
     }
 
     sb.append("curl -v ")
