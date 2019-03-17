@@ -123,40 +123,37 @@ class Request(private val url: String,
 
   override fun toString(): String {
     return prettyPrintCurl()
-    //    return "Request{" +
-    //      "url='" + url + '\'' +
-    //      ", method=" + method +
-    //      ", body=" + body +
-    //      ", query=" + query +
-    //      ", path=" + path +
-    //      ", header=" + header +
-    //      ", form=" + form +
-    //      ", request=" + request +
-    //      '}';
+//    return standard()
+  }
+
+  @SuppressWarnings("unused")
+  fun standard(): String {
+    return "Request(url='$url', method=$method, body=$body, query=$query, path=$path, header=$header, form=$form, request=$request)"
   }
 
   /**
    * Displays a HTTP request in curl syntax.
    */
+  @SuppressWarnings("unused")
   private fun prettyPrintCurl(): String {
     val sb = StringBuilder()
 
-    var instantiatedUrl = url
-    for ((key, value) in path) {
-      instantiatedUrl = instantiatedUrl.replace("\\{${Pattern.quote(key)}}".toRegex(), Matcher.quoteReplacement(value))
-    }
-
     sb.append("curl -v ")
         .append("-X ").append(method).append(' ')
+        .append("-H 'Content-Type: application/json' ")
 
-    sb.append(instantiatedUrl).append(' ')
+    var withPathParams = url
+    for ((key, value) in path) {
+      withPathParams = withPathParams.replace("\\{${Pattern.quote(key)}}".toRegex(), Matcher.quoteReplacement(value))
+    }
+    sb.append(withPathParams).append(' ')
 
     if (!query.isEmpty()) {
       sb.append('?').append(
           query.entries.joinToString(separator = "&") { e ->
             sb.append(e.key)
                 .append('=')
-                .append(encode(e.value.toString(), "UTF-8"))
+                .append(encode(e.value, "UTF-8"))
           })
     }
 
@@ -180,7 +177,7 @@ class Request(private val url: String,
           .append("'")
     }
 
-    return sb.toString()
+    return sb.toString().trimEnd()
   }
 
   companion object {
