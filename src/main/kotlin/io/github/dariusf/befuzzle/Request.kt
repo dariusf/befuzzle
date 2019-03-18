@@ -146,7 +146,7 @@ class Request(private val url: String,
     for ((key, value) in path) {
       withPathParams = withPathParams.replace("\\{${Pattern.quote(key)}}".toRegex(), Matcher.quoteReplacement(value))
     }
-    sb.append(withPathParams).append(' ')
+    sb.append(withPathParams)
 
     if (!query.isEmpty()) {
       sb.append('?').append(
@@ -156,6 +156,7 @@ class Request(private val url: String,
                 .append(encode(e.value, "UTF-8"))
           })
     }
+    sb.append(' ')
 
     header.forEach { k, v ->
       sb.append("-H ")
