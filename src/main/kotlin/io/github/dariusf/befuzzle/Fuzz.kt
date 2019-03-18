@@ -397,7 +397,7 @@ class Fuzz(swaggerDefs: MutableMap<String, Model>) : WithQuickTheories {
 
     fun createTestCases(config: Config): List<TestCase> {
 
-      val serverSpec = SwaggerParser().read(config.input)
+      val serverSpec = SwaggerParser().read(config.specLocation)
       //    String swaggerString = Json.pretty(serverSpec);
 
       val fuzz = Fuzz(serverSpec.definitions)

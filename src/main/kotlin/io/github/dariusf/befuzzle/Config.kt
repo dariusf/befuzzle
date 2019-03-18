@@ -1,17 +1,21 @@
 package io.github.dariusf.befuzzle
 
-import org.apache.commons.cli.*
+import org.apache.commons.cli.CommandLine
+import org.apache.commons.cli.DefaultParser
+import org.apache.commons.cli.HelpFormatter
+import org.apache.commons.cli.Options
 import org.slf4j.LoggerFactory
+import java.net.URI
 import java.net.URL
 
 /**
- * All configuration goes through this object
+ * All configuration goes through here
  */
 class Config @Throws(Exception::class) constructor(args: Array<String>) {
 
   val host: String
   val port: Int
-  val input: String
+  val specLocation: String
   val proxyURL: URL?
   val allowUndeclared: Boolean
 
@@ -19,11 +23,11 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
 
     private val LOGGER = LoggerFactory.getLogger(Config::class.java.name)
 
-    private val NAME = "befuzzle"
+    private const val NAME = "befuzzle"
 
     private fun help(options: Options) {
       val formatter = HelpFormatter()
-      formatter.printHelp("$NAME [spec]", options)
+      formatter.printHelp("$NAME [server] [spec]", "", options, "")
       System.exit(0)
     }
 
@@ -37,8 +41,6 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
 
   init {
     val options = Options()
-    options.addOption("h", "host", true, "the host to hit [default: localhost]")
-    options.addOption("p", "port", true, "the port of the host to hit [default: 8080]")
     options.addOption(null, "allow-undeclared", false, "allow undeclared HTTP response codes")
     options.addOption(null, "help", false, "print usage info")
     val parser = DefaultParser()
@@ -46,18 +48,17 @@ class Config @Throws(Exception::class) constructor(args: Array<String>) {
     if (cmd.hasOption("help")) {
       help(options)
     }
-    host = cmd.getOptionValue("host", "localhost")
-    val portS = cmd.getOptionValue("port", "8080")
-    try {
-      port = Integer.parseInt(portS)
-    } catch (e: Exception) {
-      throw ParseException("invalid port $portS")
-    }
     allowUndeclared = cmd.hasOption("allow-undeclared")
-    if (cmd.argList.size != 1) {
+    if (cmd.argList.size != 2) {
       help(options)
     }
-    input = cmd.args[0]
+
+    val server = cmd.args[0]
+    val uri = URI(server)
+    host = uri.host
+    port = uri.port
+
+    specLocation = cmd.args[1]
     val httpProxy = System.getenv("http_proxy")
     if (httpProxy != null) {
       LOGGER.info("Using proxy url {}", httpProxy)
