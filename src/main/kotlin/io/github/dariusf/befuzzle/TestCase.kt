@@ -21,7 +21,8 @@ class TestCase(private val config: Config,
                private val form: Gen<Map<String, String>>,
                private val declaredResponses: Set<Int>) {
 
-  fun execute() {
+  fun execute(examples: Int) {
+    System.setProperty("QT_EXAMPLES", Integer.toString(examples))
     QuickTheory.qt()
         .forAll(generator())
         .check { g -> g.check(config, declaredResponses) }

@@ -2,4 +2,4 @@ target/
 *.log
 .idea/
 *.iml
-
+*.yml

@@ -1,6 +1,9 @@
 package io.github.dariusf.befuzzle
 
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.mashape.unirest.http.Unirest
+import io.swagger.util.Yaml
 import org.apache.http.HttpHost
 import org.apache.http.impl.client.HttpClientBuilder
 import org.slf4j.LoggerFactory
@@ -9,6 +12,7 @@ import org.zalando.logbook.DefaultHttpLogWriter.Level.DEBUG
 import org.zalando.logbook.Logbook
 import org.zalando.logbook.httpclient.LogbookHttpRequestInterceptor
 import org.zalando.logbook.httpclient.LogbookHttpResponseInterceptor
+import java.io.FileInputStream
 import java.io.IOException
 import java.util.*
 
@@ -18,9 +22,34 @@ import java.util.*
 object CLI {
 
   private val scanner = Scanner(System.`in`)
+  private val ymlMapper = Yaml.mapper()
+
+  init {
+    ymlMapper.registerModule(KotlinModule())
+  }
 
   fun execute(config: Config, testCases: List<TestCase>) {
 
+    when (config.mode) {
+      is Mode.WritePlan -> {
+        val plans = testCases.map { PlanTest(it.method, it.endpoint, 100) }
+        ymlMapper.writeValue(System.out, plans)
+      }
+      is Mode.ReadPlan -> {
+        val plans : List<PlanTest> = ymlMapper.readValue(FileInputStream(config.mode.file))
+        val tests = plans.map { p ->
+          testCases.filter { it.method == p.method && it.endpoint == p.endpoint }[0] to p.examples }
+        tests.forEach { (t, n) -> t.execute(n) }
+      }
+      is Mode.Interactive -> interactive(testCases, config)
+    }
+
+    println("\uD83D\uDE07️")
+
+    // TODO back to the top, catch exceptions, etc.
+  }
+
+  private fun interactive(testCases: List<TestCase>, config: Config) {
     println("\nWhich endpoint would you like to test?\n")
 
     val choice = choose(testCases.map { "${it.method} ${it.endpoint}" })
@@ -36,8 +65,6 @@ object CLI {
           oExamples
         }
 
-    System.setProperty("QT_EXAMPLES", Integer.toString(examples))
-
     val testCase = testCases[choice]
 
     // TODO better url type
@@ -49,11 +76,7 @@ object CLI {
 
     scanner.nextLine()
 
-    testCase.execute()
-
-    println("\uD83D\uDE07️")
-
-    // TODO back to the top, catch exceptions, etc.
+    testCase.execute(examples)
   }
 
   private fun <T> choose(choices: List<T>): Int {
